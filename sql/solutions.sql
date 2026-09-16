@@ -21,3 +21,14 @@ JOIN state s
 WHERE cs.report_date = '2020-02-06'
 GROUP BY c.name, s.state_name
 ORDER BY c.name, total_deaths DESC;
+--3. List the continents along with the total number of confirmed cases, deaths, and recoveries.
+SELECT 
+    c.continent,
+    SUM(cs.confirmed) AS confirmed_cases,
+    SUM(cs.deaths) AS deaths,
+    SUM(cs.recovered) AS recoveries
+FROM country c
+JOIN covid_case_stats cs
+    ON c.country_id = cs.country_id
+GROUP BY c.continent
+ORDER BY c.continent;
