@@ -142,3 +142,45 @@ WHERE cs.report_date = '2020-01-30'
 GROUP BY c.country_id, c.name
 ORDER BY total_new_cases DESC
 LIMIT 1;
+--UC12
+WITH weekly_data AS (
+    SELECT
+        country_id,
+        MIN(report_date) AS start_date,
+        MAX(report_date) AS end_date
+    FROM covid_case_stats
+    WHERE report_date >= CURRENT_DATE - INTERVAL '7 days'
+    GROUP BY country_id
+),
+country_totals AS (
+    SELECT
+        w.country_id,
+        MAX(CASE 
+            WHEN cs.report_date = w.start_date 
+            THEN cs.confirmed 
+        END) AS start_confirmed,
+        MAX(CASE 
+            WHEN cs.report_date = w.end_date 
+            THEN cs.confirmed 
+        END) AS end_confirmed
+    FROM weekly_data w
+    JOIN covid_case_stats cs
+        ON cs.country_id = w.country_id
+    GROUP BY w.country_id
+)
+SELECT
+    c.name AS country,
+    start_confirmed,
+    end_confirmed,
+    CASE
+        WHEN start_confirmed = 0 THEN NULL
+        ELSE ROUND(
+            ((end_confirmed - start_confirmed) * 100.0)
+            / start_confirmed,
+            2
+        )
+    END AS percentage_increase
+FROM country_totals ct
+JOIN country c
+    ON c.country_id = ct.country_id
+ORDER BY percentage_increase DESC;
